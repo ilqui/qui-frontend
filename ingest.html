@@ -144,8 +144,13 @@ html, body { font-family: 'Inter', sans-serif; font-size: 13px; color: #111; bac
 
 <input type="file" id="photo-upload-input" accept="image/*" style="display:none"/>
 
+<script src="/config.js"></script>
 <script>
-const API = 'https://qui-backend-production.up.railway.app';
+const API = window.QUI_API;
+if (!API) {
+  document.body.innerHTML = '<p style="padding:2em;font-family:sans-serif">configurazione mancante: API_URL</p>';
+  throw new Error('API_URL mancante');
+}
 const CLOUDINARY_CLOUD_NAME = 'zcjxbsss';
 const CLOUDINARY_UPLOAD_PRESET = 'qui_uploads';
 const TIER_LABELS = {
