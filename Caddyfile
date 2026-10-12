@@ -19,6 +19,12 @@
 
 	respond /health 200
 
+	# Indirizzo dell'API: variabile API_URL del servizio su Railway
+	handle /config.js {
+		header Content-Type "text/javascript; charset=utf-8"
+		respond `window.QUI_API = "{$API_URL}";` 200
+	}
+
 	# Pagine degli annunci: le costruisce qui-backend, si vedono su www.ilqui.com
 	reverse_proxy /l/* ilqui-backend.railway.internal:8080
 
