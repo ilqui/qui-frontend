@@ -2012,7 +2012,7 @@ async function uploadToCloudinary(file) {
 // ── MERCHANT MODAL ──
 let modalMap = null, modalMarker = null, selectedType = 'product';
 let pickedLat = null, pickedLng = null, selectedPhotos = [];
-let editingListingId = null, existingPhotoUrls = [];
+let editingListingId = null, existingPhotoUrls = [], editOriginal = null;
 let myListingsCache = [];
 
 function openModal() {
@@ -2062,6 +2062,13 @@ function editListing(id) {
   }, 0);
 
   existingPhotoUrls = (l.photos || []).slice(0, 4);
+  editOriginal = {
+    title: (l.title || '').trim(),
+    description: (l.description || '').trim(),
+    category: l.category || '',
+    price: parseFloat(l.price) || 0,
+    photos: existingPhotoUrls.slice()
+  };
   selectedPhotos = [];
   renderPhotoPreview();
 
@@ -2088,6 +2095,8 @@ function resetForm() {
   selectedPhotos = [];
   existingPhotoUrls = [];
   editingListingId = null;
+  editOriginal = null;
+  document.getElementById('btn-submit').disabled = false;
   document.getElementById('photo-preview').innerHTML = '';
   I18N.set(document.querySelector('.modal-title'), 'listing.publish');
   I18N.set(document.getElementById('btn-submit'), 'form.submit');
@@ -2197,13 +2206,18 @@ async function submitListing() {
   try {
     let r;
     if (isEdit) {
-      const payload = {
-        title, type: selectedType, category,
-        description: document.getElementById('f-desc').value.trim(),
-        price: parseFloat(document.getElementById('f-price').value) || 0,
-        photos: allPhotoUrls
-      };
+      const description = document.getElementById('f-desc').value.trim();
+      const price = parseFloat(document.getElementById('f-price').value) || 0;
+      const orig = editOriginal || {};
+      const payload = {};
+      if (title !== orig.title) payload.title = title;
+      if (description !== orig.description) payload.description = description;
+      if (category !== orig.category) payload.category = category;
+      if (price !== orig.price) payload.price = price;
+      const origPhotos = orig.photos || [];
+      if (allPhotoUrls.length !== origPhotos.length || allPhotoUrls.some((u, i) => u !== origPhotos[i])) payload.photos = allPhotoUrls;
       if (contact) payload.contact = contact;
+      if (!Object.keys(payload).length) { closeModal(); return; }
       r = await fetch(`${API}/products/${editingListingId}`, {
         method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload)
       });
