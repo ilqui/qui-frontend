@@ -135,9 +135,6 @@ function esc(s) {
 function priceStr(p) { return p == null ? '—' : (p === 0 ? 'Gratis' : `€${p}`); }
 function normTitle(s) { return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
 
-const CLOUDINARY_CLOUD_NAME = 'zcjxbsss';
-const CLOUDINARY_UPLOAD_PRESET = 'qui_uploads';
-
 let PLACE_ID = null;
 let matchModel = [];   // { row, product|null, decision, entity_id }
 
@@ -160,14 +157,25 @@ async function loadPlaces() {
   }
 }
 
-async function uploadRaw(file) {
+// Documenti: upload firmato dal backend, asset privato sotto documenti/<utente>/.
+// Ritorna il riferimento che Cloudinary ha davvero assegnato, mai un indirizzo.
+async function sendDocument(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const sr = await fetch(`${API}/documents/upload-signature`, {
+    method: 'POST', headers: authHeaders(), body: JSON.stringify({ ext })
+  });
+  const sig = await sr.json().catch(() => ({}));
+  if (!sr.ok) throw new Error(sig.error || `errore ${sr.status}`);
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`, { method: 'POST', body: fd });
-  if (!r.ok) throw new Error('Upload documento fallito');
-  const d = await r.json();
-  return d.secure_url;
+  fd.append('api_key', sig.api_key);
+  fd.append('signature', sig.signature);
+  Object.entries(sig.params).forEach(([k, v]) => fd.append(k, v));
+  const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/${sig.resource_type}/upload`,
+    { method: 'POST', body: fd });
+  const uj = await up.json().catch(() => ({}));
+  if (!up.ok || !uj.public_id) throw new Error('caricamento del documento non riuscito');
+  return uj.public_id;
 }
 
 // ── STEP 1 → 2 ──
@@ -184,20 +192,21 @@ async function analyze() {
   btn.disabled = true; btn.textContent = 'Analisi in corso…';
 
   try {
-    const docUrl = await uploadRaw(file);
+    const docRef = await sendDocument(file);
 
     // righe rilette dal documento (nessuna scrittura DB) + annunci attuali della sede
     const [reingestResp, productsResp] = await Promise.all([
       fetch(`${API}/documents/reingest`, {
         method: 'POST', headers: authHeaders(),
-        body: JSON.stringify({ document_url: docUrl, place_id: placeId })
+        body: JSON.stringify({ document_ref: docRef, place_id: placeId })
       }),
       fetch(`${API}/places/${placeId}/products?lang=${encodeURIComponent(LANG)}`, { headers: authHeaders() })
     ]);
-    if (!reingestResp.ok) throw new Error('Rilettura documento fallita');
+    const reingest = await reingestResp.json().catch(() => ({}));
+    if (!reingestResp.ok) throw new Error(reingest.error || 'rilettura documento fallita');
     if (!productsResp.ok) throw new Error('Caricamento annunci fallito');
 
-    const rows = (await reingestResp.json()).rows || [];
+    const rows = reingest.rows || [];
     const products = await productsResp.json();
 
     buildMatchModel(rows, products);
