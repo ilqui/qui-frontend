@@ -420,7 +420,12 @@ function askConfirm(title, body, dangerLabel, onConfirm) {
 }
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); confirmCallback = null; }
 document.getElementById('confirm-danger-btn').addEventListener('click', () => { const cb = confirmCallback; closeConfirm(); if (cb) cb(); });
-document.getElementById('confirm-overlay').addEventListener('click', function(e) { if (e.target === this) closeConfirm(); });
+// La conferma si chiude con «Annulla» o con Esc, mai con un clic sullo sfondo.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !document.getElementById('confirm-overlay').classList.contains('open')) return;
+  e.preventDefault();
+  closeConfirm();
+});
 
 async function init() {
   if (!authToken) { window.location.href = '/'; return; }

@@ -839,7 +839,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
     <div class="modal-success" id="modal-success">
       <div class="success-icon">✅</div>
       <div class="success-title" data-i18n="form.success.published">Annuncio pubblicato!</div>
-      <div class="success-sub" data-i18n="form.success.sub" data-i18n-rich="1">Apparirà sulla mappa entro pochi secondi.<br>La posizione è approssimata di ~100m per la tua privacy.</div>
+      <div class="success-sub" data-i18n="form.success.sub" data-i18n-rich="1">Apparirà sulla mappa entro pochi secondi.<br>Sulla mappa si vede solo una zona di 500 m, mai il punto esatto.</div>
     </div>
     <div class="modal-footer" id="modal-footer">
       <button class="btn-cancel" onclick="closeModal()" data-i18n="common.cancel">Annulla</button>
@@ -2280,12 +2280,26 @@ async function submitReview(listingId, stars) {
     load();
   } catch(e) { alert(I18N.t('common.error') + ': ' + e.message); }
 }
-document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
-document.getElementById('auth-overlay').addEventListener('click', function(e) { if (e.target===this) closeAuthModal(); });
-document.getElementById('profile-overlay').addEventListener('click', function(e) { if (e.target===this) closeProfileModal(); });
-document.getElementById('detail-overlay').addEventListener('click', function(e) { if (e.target===this) closeDetailModal(); });
-document.getElementById('forgot-overlay').addEventListener('click', function(e) { if (e.target===this) closeForgotModal(); });
-document.getElementById('reset-overlay').addEventListener('click', function(e) { if (e.target===this) closeResetModal(); });
+// Una finestra si chiude con il suo ✕ o con Esc, mai con un clic sullo sfondo.
+// Esc chiude la finestra aperta più in alto con la funzione del suo ✕: l'ordine
+// segue lo z-index, e a parità di z-index l'ordine nel DOM (più in basso = sopra).
+const ESC_CLOSE = [
+  ['reset-overlay',   () => closeResetModal()],    // 4000
+  ['forgot-overlay',  () => closeForgotModal()],   // 4000
+  ['auth-overlay',    () => closeAuthModal()],     // 4000
+  ['profile-overlay', () => closeProfileModal()],  // 3500
+  ['contact-overlay', () => closeContactModal()],  // 3000
+  ['detail-overlay',  () => closeDetailModal()],   // 2500
+  ['modal-overlay',   () => closeModal()],         // 2000
+  ['scopri-overlay',  () => closeScopri()],        // 1500
+];
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const top = ESC_CLOSE.find(([id]) => document.getElementById(id).classList.contains('open'));
+  if (!top) return;
+  e.preventDefault();
+  top[1]();
+});
 
 // ── SCOPRI ──
 let scopriFilter = 'all';

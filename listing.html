@@ -398,10 +398,9 @@ function backLink() {
 }
 
 // ── Mappa di sfondo con la zona indicativa ──
-// La posizione esatta si vede solo dopo l'acquisto del contatto: qui c'è solo una zona
-// di 500 m di raggio. Il centro lo calcola il server (sfocatura); la pagina disegna la zona
-// attorno al punto che riceve e non mostra mai un punto preciso.
-const ZONE_RADIUS_M = 500;
+// La posizione esatta si vede solo dopo l'acquisto del contatto: qui c'è solo la zona
+// del luogo. Centro e raggio (zone_radius_m) arrivano dal server; la pagina disegna la zona
+// e non mostra mai un punto preciso.
 let bgMap = null, zoneLayer = null;
 
 function zoneTargetY(h) {
@@ -430,10 +429,16 @@ function showZone(l) {
   bgMap.panBy([0, h / 2 - zoneTargetY(h)], { animate: false });
 
   if (zoneLayer) zoneLayer.remove();
-  const south = [l.lat - ZONE_RADIUS_M / 111320, l.lng];
+  zoneLayer = null;
+  const radius = l.zone_radius_m;
+  if (!(typeof radius === 'number' && radius > 0)) {
+    console.error('zone_radius_m mancante: la zona non si disegna', l.id);
+    return;
+  }
+  const south = [l.lat - radius / 111320, l.lng];
   zoneLayer = L.layerGroup([
     L.circle(center, {
-      radius: ZONE_RADIUS_M, interactive: false,
+      radius, interactive: false,
       color: '#2a2a6e', weight: 1.5, opacity: 0.55, dashArray: '5 5',
       fillColor: '#2a2a6e', fillOpacity: 0.10
     }),
