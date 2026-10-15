@@ -195,7 +195,6 @@ I18N.register('en', {
 
   'gps.unavailable': 'GPS not available',
   'gps.failed': 'Unable to get GPS location',
-  'photos.heic': 'HEIC format not supported. Go to iPhone Settings → Camera → Formats → "Most Compatible".',
   'photo.existing': 'existing photo {n}',
   'photo.n': 'photo {n}',
   'upload.signature': 'Signature not available',

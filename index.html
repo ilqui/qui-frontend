@@ -342,6 +342,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
 .photo-upload-area input { display: none; }
 .photo-preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .photo-thumb { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; border: 0.5px solid #e0e0e0; }
+.photo-thumb-fallback { display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 4px; background: #f4f4f4; color: #888; font-size: 10px; text-align: center; word-break: break-all; overflow: hidden; }
 .photo-thumb-wrap { position: relative; display: inline-block; }
 .photo-remove {
   position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
@@ -831,7 +832,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
         <div class="photo-upload-area" onclick="document.getElementById('f-photos').click()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.5" style="margin-bottom:4px"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           <div style="font-size:12px;color:#999" data-i18n="form.photos.add">Tocca per aggiungere foto</div>
-          <input type="file" id="f-photos" accept="image/*" multiple onchange="handlePhotos(this)"/>
+          <input type="file" id="f-photos" accept="image/*,.heic,.heif" multiple onchange="handlePhotos(this)"/>
         </div>
         <div class="photo-preview-grid" id="photo-preview"></div>
       </div>
@@ -2145,9 +2146,6 @@ function useGPS() {
 function handlePhotos(input) {
   Array.from(input.files).forEach(file => {
     if (existingPhotoUrls.length + selectedPhotos.length >= 4) return;
-    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
-      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
-    if (isHeic) { alert(I18N.t('photos.heic')); return; }
     const reader = new FileReader();
     reader.onload = e => { selectedPhotos.push({ file, dataUrl: e.target.result }); renderPhotoPreview(); };
     reader.readAsDataURL(file);
@@ -2162,10 +2160,20 @@ function renderPhotoPreview() {
     </div>`).join('');
   const newHTML = selectedPhotos.map((p,i) => `
     <div class="photo-thumb-wrap">
-      <img class="photo-thumb" src="${p.dataUrl}"${I18N.attr('alt', 'photo.n', { n: i+1 })}/>
+      <img class="photo-thumb" src="${p.dataUrl}"${I18N.attr('alt', 'photo.n', { n: i+1 })} onerror="photoThumbFallback(this, ${i})"/>
       <button class="photo-remove" onclick="removePhoto(${i})">×</button>
     </div>`).join('');
   document.getElementById('photo-preview').innerHTML = existingHTML + newHTML;
+}
+
+// Anteprima non leggibile (es. HEIC fuori da Safari): riquadro col nome, la foto parte comunque.
+function photoThumbFallback(img, i) {
+  const p = selectedPhotos[i];
+  const box = document.createElement('div');
+  box.className = 'photo-thumb photo-thumb-fallback';
+  box.textContent = p ? p.file.name : '';
+  box.title = box.textContent;
+  img.replaceWith(box);
 }
 
 function removePhoto(i) { selectedPhotos.splice(i,1); renderPhotoPreview(); }

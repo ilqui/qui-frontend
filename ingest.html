@@ -142,7 +142,7 @@ html, body { font-family: 'Inter', sans-serif; font-size: 13px; color: #111; bac
   <div class="state-box"><div class="spinner"></div>Caricamento…</div>
 </div>
 
-<input type="file" id="photo-upload-input" accept="image/*" style="display:none"/>
+<input type="file" id="photo-upload-input" accept="image/*,.heic,.heif" style="display:none"/>
 
 <script src="/config.js"></script>
 <script>
@@ -325,7 +325,7 @@ function renderSetupForm() {
           <label>Foto prodotti/servizi/esperienze (obbligatorio se non hai URL con foto)</label>
           <div class="photo-upload-area" onclick="document.getElementById('in-photos').click()" style="padding:14px">
             <div style="font-size:12px;color:#999">Tocca per caricare foto — solo tue, mai da terzi</div>
-            <input type="file" id="in-photos" accept="image/*" multiple style="display:none" onchange="handlePhotoUpload(this)"/>
+            <input type="file" id="in-photos" accept="image/*,.heic,.heif" multiple style="display:none" onchange="handlePhotoUpload(this)"/>
           </div>
           <div class="photo-pool-grid" id="photo-upload-list"></div>
         </div>
