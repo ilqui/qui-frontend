@@ -1270,7 +1270,7 @@ async function uploadBusinessPhoto(input) {
   const file = input.files[0];
   if (!file) return;
   try {
-    const url = await uploadToCloudinary(file);
+    const url = await sendPhoto(file);
     const r = await fetch(`${API}/auth/profile`, {
       method: 'PUT', headers: authHeaders(),
       body: JSON.stringify({ business_photo: url })
@@ -1995,18 +1995,18 @@ function timeAgo(iso) {
   return I18N.html('time.ago.d', { n: Math.round(diff/86400) });
 }
 
-// ── CLOUDINARY ──
-const CLOUDINARY_CLOUD_NAME = 'zcjxbsss';
-const CLOUDINARY_UPLOAD_PRESET = 'qui_uploads';
-
-async function uploadToCloudinary(file) {
+// ── FOTO ──
+// Unico ingresso delle foto: il file va al backend, che lo ricodifica senza
+// metadati e lo salva. Mai a Cloudinary dal browser.
+async function sendPhoto(file) {
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  fd.append('folder', 'qui');
-  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
-  if (!r.ok) throw new Error(I18N.t('upload.photo.error'));
-  return (await r.json()).secure_url;
+  const r = await fetch(`${API}/photos`, {
+    method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: fd
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.url) throw new Error(j.error || `errore ${r.status}`);
+  return j.url;
 }
 
 // ── MERCHANT MODAL ──
@@ -2192,7 +2192,7 @@ async function submitListing() {
     try {
       for (let i = 0; i < selectedPhotos.length; i++) {
         btn.textContent = I18N.t('form.uploading', { i: i+1, n: selectedPhotos.length });
-        newPhotoUrls.push(await uploadToCloudinary(selectedPhotos[i].file));
+        newPhotoUrls.push(await sendPhoto(selectedPhotos[i].file));
       }
     } catch(e) {
       alert(`${I18N.t('upload.photo.error')}: ${e.message}`);

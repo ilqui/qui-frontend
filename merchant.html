@@ -358,9 +358,6 @@ if (!API) {
   document.body.innerHTML = '<p style="padding:2em;font-family:sans-serif">configurazione mancante: API_URL</p>';
   throw new Error('API_URL mancante');
 }
-const CLOUDINARY_CLOUD_NAME = 'zcjxbsss';
-const CLOUDINARY_UPLOAD_PRESET = 'qui_uploads';
-
 let authToken = localStorage.getItem('qui_token');
 let authUser = null;
 let isEnterprise = false;
@@ -386,14 +383,17 @@ function timeAgo(iso) {
   if (diff < 86400) return `${Math.round(diff/3600)}h fa`;
   return `${Math.round(diff/86400)}g fa`;
 }
-async function uploadToCloudinary(file) {
+// Unico ingresso delle foto: il file va al backend, che lo ricodifica senza
+// metadati e lo salva. Mai a Cloudinary dal browser.
+async function sendPhoto(file) {
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  fd.append('folder', 'qui');
-  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
-  if (!r.ok) throw new Error('Errore upload foto');
-  return (await r.json()).secure_url;
+  const r = await fetch(`${API}/photos`, {
+    method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: fd
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.url) throw new Error(j.error || `errore ${r.status}`);
+  return j.url;
 }
 
 function toggleAvatarMenu() { document.getElementById('avatar-menu').classList.toggle('open'); }
@@ -478,9 +478,9 @@ async function uploadPhoto(input) {
   const file = input.files[0];
   if (!file) return;
   try {
-    const url = await uploadToCloudinary(file);
+    const url = await sendPhoto(file);
     const r = await fetch(`${API}/auth/profile`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ business_photo: url }) });
-    if (!r.ok) throw new Error('Errore salvataggio');
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'errore salvataggio');
     authUser = await r.json();
     renderAvatar();
   } catch(e) { alert('Errore: ' + e.message); }
@@ -594,10 +594,9 @@ function renderDocs() {
   body.innerHTML = html;
 }
 
-// Il documento KYB NON usa uploadToCloudinary(): quella funzione carica sul
-// preset pubblico non firmato, dove chiunque abbia l'URL scarica il file.
-// Un documento societario passa da un upload firmato dal backend e diventa
-// un asset "authenticated", leggibile solo con firma.
+// Il documento KYB passa da un upload firmato dal backend e diventa un asset
+// "authenticated", leggibile solo con firma: chi ne conosce l'indirizzo non
+// lo scarica.
 async function uploadKybDoc(input) {
   const file = input.files[0];
   if (!file) return;
