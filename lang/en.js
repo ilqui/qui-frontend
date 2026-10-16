@@ -32,7 +32,9 @@ I18N.register('en', {
   'auth.email': 'EMAIL',
   'auth.password': 'PASSWORD',
   'auth.email.placeholder': 'youremail@example.com',
-  'auth.password.placeholder': 'At least 6 characters',
+  'auth.password.placeholder': 'at least 8 characters',
+  'auth.password.show': 'show password',
+  'auth.password.hide': 'hide password',
   'auth.submit.login': 'Sign in',
   'auth.submit.register': 'Sign up',
   'auth.loggingin': 'Signing in…',
@@ -52,7 +54,6 @@ I18N.register('en', {
   'auth.error.generic': 'Sign-in failed',
   'auth.error.missing': 'Enter email and password',
   'auth.error.noemail': 'Enter your email',
-  'auth.error.short': 'Password must be at least 6 characters',
 
   'verify.ok': 'Email verified. Welcome to IL QUI.',
   'verify.expired': 'The verification link has expired. Request a new one from your profile.',
@@ -66,7 +67,6 @@ I18N.register('en', {
   'security.submit': 'Change password',
   'security.done': '✓ Password updated',
   'security.mismatch': 'New password and confirmation do not match.',
-  'security.tooshort': 'The new password must be at least 6 characters.',
 
   'profile.logout': 'Sign out of account',
   'profile.mylistings': 'My listings',
