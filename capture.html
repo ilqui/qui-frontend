@@ -90,6 +90,15 @@ html, body { font-family: 'Inter', sans-serif; font-size: 13px; color: #111; bac
 .auth-submit:disabled { opacity: .45; cursor: not-allowed; }
 .auth-error { font-size: 12px; color: #c0392b; background: #fdf0f0; border-radius: 6px; padding: 8px 10px; }
 .auth-info { font-size: 11px; color: #888; line-height: 1.5; text-align: center; }
+.pw-wrap { position: relative; display: flex; }
+.pw-wrap input { flex: 1; min-width: 0; padding-right: 38px; }
+.pw-toggle {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 36px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: #888; cursor: pointer;
+}
+.pw-toggle[aria-pressed="true"] { color: #2a2a6e; }
+.pw-toggle svg { width: 16px; height: 16px; }
 </style>
 </head>
 <body>
@@ -147,17 +156,17 @@ function renderAuthForm() {
   root.innerHTML = `
     <div class="card">
       <div class="card-header">🔐 Accedi per continuare</div>
-      <div class="card-body">
+      <form class="card-body" novalidate onsubmit="event.preventDefault(); submitAuth()">
         <div class="auth-info">Per collegare questa cattura al tuo account QUI, accedi o registrati.</div>
         <div class="auth-tabs">
-          <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Accedi</button>
-          <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Registrati</button>
+          <button type="button" class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Accedi</button>
+          <button type="button" class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Registrati</button>
         </div>
         <div id="auth-error" style="display:none" class="auth-error"></div>
-        <div class="auth-field"><label>EMAIL</label><input type="email" id="auth-email" placeholder="tuaemail@esempio.it"/></div>
-        <div class="auth-field"><label>PASSWORD</label><input type="password" id="auth-password" placeholder="Minimo 6 caratteri"/></div>
-        <button class="auth-submit" id="auth-submit-btn" onclick="submitAuth()">Accedi</button>
-      </div>
+        <div class="auth-field"><label>EMAIL</label><input type="email" id="auth-email" autocomplete="username" placeholder="tuaemail@esempio.it"/></div>
+        <div class="auth-field"><label>PASSWORD</label><div class="pw-wrap"><input type="password" id="auth-password" autocomplete="current-password" placeholder="minimo 8 caratteri"/><button type="button" class="pw-toggle" aria-pressed="false" aria-label="mostra password" onmousedown="event.preventDefault()" onclick="alternaPassword(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <button type="submit" class="auth-submit" id="auth-submit-btn">Accedi</button>
+      </form>
     </div>`;
 }
 
@@ -166,12 +175,28 @@ function switchAuthTab(mode) {
   document.getElementById('tab-login').classList.toggle('active', mode === 'login');
   document.getElementById('tab-register').classList.toggle('active', mode === 'register');
   document.getElementById('auth-submit-btn').textContent = mode === 'login' ? 'Accedi' : 'Registrati';
+  document.getElementById('auth-password').autocomplete =
+    mode === 'register' ? 'new-password' : 'current-password';
   document.getElementById('auth-error').style.display = 'none';
+}
+
+// Mostra o nasconde la password del campo accanto al pulsante; senza `mostra`
+// inverte lo stato. Il cursore resta dov'era nel campo.
+function alternaPassword(btn, mostra) {
+  const input = btn.previousElementSibling;
+  if (mostra === undefined) mostra = input.type === 'password';
+  const inizio = input.selectionStart, fine = input.selectionEnd;
+  input.type = mostra ? 'text' : 'password';
+  // Dopo un clic che cambia il type, Chromium riporta il cursore all'inizio:
+  // lo si rimette al frame successivo.
+  if (document.activeElement === input) requestAnimationFrame(() => input.setSelectionRange(inizio, fine));
+  btn.setAttribute('aria-pressed', String(mostra));
+  btn.setAttribute('aria-label', mostra ? 'nascondi password' : 'mostra password');
 }
 
 async function submitAuth() {
   const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
+  const password = document.getElementById('auth-password').value;
   const errEl = document.getElementById('auth-error');
   const btn = document.getElementById('auth-submit-btn');
   errEl.style.display = 'none';

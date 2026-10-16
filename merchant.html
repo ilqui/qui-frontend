@@ -85,6 +85,16 @@ button { font-family: inherit; }
   background: #fafafa; width: 100%; transition: border-color .15s;
 }
 .field input:focus, .field textarea:focus { border-color: #2a2a6e; background: #fff; }
+.pw-form { display: contents; }
+.pw-wrap { position: relative; display: flex; }
+.pw-wrap input { flex: 1; min-width: 0; padding-right: 38px; }
+.pw-toggle {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 36px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: #888; cursor: pointer;
+}
+.pw-toggle[aria-pressed="true"] { color: #2a2a6e; }
+.pw-toggle svg { width: 16px; height: 16px; }
 
 .save-btn {
   padding: 10px 18px; background: #2a2a6e; color: #fff; border: none;
@@ -295,10 +305,13 @@ button { font-family: inherit; }
 
         <div class="divider-label">Sicurezza</div>
         <div class="divider-hint">Cambiando password verrai disconnesso da tutti gli altri dispositivi.</div>
-        <div class="field"><label>Password attuale</label><input type="password" id="pw-current" autocomplete="current-password" placeholder="La password che usi ora"/></div>
-        <div class="field"><label>Nuova password</label><input type="password" id="pw-new" autocomplete="new-password" placeholder="Minimo 6 caratteri"/></div>
-        <div class="field"><label>Conferma nuova password</label><input type="password" id="pw-confirm" autocomplete="new-password" placeholder="Ripeti la nuova password"/></div>
-        <button class="save-btn" id="pw-btn" onclick="changePassword()">Cambia password</button>
+        <form class="pw-form" novalidate onsubmit="event.preventDefault(); changePassword()">
+        <input type="email" id="pw-username" autocomplete="username" readonly hidden/>
+        <div class="field"><label>Password attuale</label><div class="pw-wrap"><input type="password" id="pw-current" autocomplete="current-password" placeholder="La password che usi ora"/><button type="button" class="pw-toggle" aria-pressed="false" aria-label="mostra password" onmousedown="event.preventDefault()" onclick="alternaPassword(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <div class="field"><label>Nuova password</label><div class="pw-wrap"><input type="password" id="pw-new" autocomplete="new-password" placeholder="minimo 8 caratteri"/><button type="button" class="pw-toggle" aria-pressed="false" aria-label="mostra password" onmousedown="event.preventDefault()" onclick="alternaPassword(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <div class="field"><label>Conferma nuova password</label><div class="pw-wrap"><input type="password" id="pw-confirm" autocomplete="new-password" placeholder="Ripeti la nuova password"/><button type="button" class="pw-toggle" aria-pressed="false" aria-label="mostra password" onmousedown="event.preventDefault()" onclick="alternaPassword(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+        <button type="submit" class="save-btn" id="pw-btn">Cambia password</button>
+        </form>
       </div>
     </div>
   </div>
@@ -405,6 +418,7 @@ document.addEventListener('click', e => {
 document.querySelectorAll('.avatar-menu-item[data-target]').forEach(el => {
   el.addEventListener('click', () => {
     document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === el.dataset.target));
+    document.querySelectorAll('.pw-toggle').forEach(b => alternaPassword(b, false));
     document.getElementById('avatar-menu').classList.remove('open');
     window.scrollTo({ top: 0 });
   });
@@ -469,6 +483,7 @@ function renderAvatar() {
     img.style.display = 'none'; placeholder.style.display = 'flex';
   }
   document.getElementById('hero-email').textContent = u.email;
+  document.getElementById('pw-username').value = u.email;
   const badge = document.getElementById('tier-badge');
   badge.textContent = isEnterprise ? 'Enterprise' : 'Regular';
   badge.className = 'tier-badge ' + (isEnterprise ? 'enterprise' : 'regular');
@@ -515,6 +530,20 @@ async function saveProfile() {
   }
 }
 
+// Mostra o nasconde la password del campo accanto al pulsante; senza `mostra`
+// inverte lo stato. Il cursore resta dov'era nel campo.
+function alternaPassword(btn, mostra) {
+  const input = btn.previousElementSibling;
+  if (mostra === undefined) mostra = input.type === 'password';
+  const inizio = input.selectionStart, fine = input.selectionEnd;
+  input.type = mostra ? 'text' : 'password';
+  // Dopo un clic che cambia il type, Chromium riporta il cursore all'inizio:
+  // lo si rimette al frame successivo.
+  if (document.activeElement === input) requestAnimationFrame(() => input.setSelectionRange(inizio, fine));
+  btn.setAttribute('aria-pressed', String(mostra));
+  btn.setAttribute('aria-label', mostra ? 'nascondi password' : 'mostra password');
+}
+
 async function changePassword() {
   const btn = document.getElementById('pw-btn');
   const cur = document.getElementById('pw-current').value;
@@ -522,7 +551,6 @@ async function changePassword() {
   const cf  = document.getElementById('pw-confirm').value;
 
   if (!cur || !nw) { alert('Compila password attuale e nuova password.'); return; }
-  if (nw.length < 6) { alert('La nuova password deve avere almeno 6 caratteri.'); return; }
   // Conferma verificata solo lato client: il backend non la riceve, serve a
   // evitare che un refuso blocchi fuori l'utente dal proprio account.
   if (nw !== cf) { alert('La nuova password e la conferma non coincidono.'); return; }

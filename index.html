@@ -191,6 +191,15 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
 .auth-submit:disabled { opacity: .45; cursor: not-allowed; }
 .auth-error { font-size: 12px; color: #c0392b; background: #fdf0f0; border-radius: 6px; padding: 8px 10px; }
 .auth-info { font-size: 11px; color: #888; line-height: 1.5; text-align: center; }
+.pw-wrap { position: relative; display: flex; }
+.pw-wrap input { flex: 1; min-width: 0; padding-right: 38px; }
+.pw-toggle {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 36px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: #888; cursor: pointer;
+}
+.pw-toggle[aria-pressed="true"] { color: #2a2a6e; }
+.pw-toggle svg { width: 16px; height: 16px; }
 
 /* ── CONTACT MODAL ── */
 .contact-overlay {
@@ -631,7 +640,7 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
 }
 .leaflet-control-zoom { display: none !important; }
 </style>
-<script src="/i18n.js?v=6"></script>
+<script src="/i18n.js?v=7"></script>
 </head>
 <body>
 <div class="app">
@@ -693,20 +702,20 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
       <div class="auth-header-title" data-i18n="auth.title">Accedi a QUI</div>
       <button class="modal-close" style="background:rgba(255,255,255,0.15);color:#fff" onclick="closeAuthModal()">✕</button>
     </div>
-    <div class="auth-body">
+    <form class="auth-body" novalidate onsubmit="event.preventDefault(); submitAuth()">
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')" data-i18n="auth.tab.login">Accedi</button>
-        <button class="auth-tab" id="tab-register" onclick="switchTab('register')" data-i18n="auth.tab.register">Registrati</button>
+        <button type="button" class="auth-tab active" id="tab-login" onclick="switchTab('login')" data-i18n="auth.tab.login">Accedi</button>
+        <button type="button" class="auth-tab" id="tab-register" onclick="switchTab('register')" data-i18n="auth.tab.register">Registrati</button>
       </div>
       <div id="auth-error" style="display:none" class="auth-error"></div>
-      <div class="auth-field"><label data-i18n="auth.email">EMAIL</label><input type="email" id="auth-email" placeholder="tuaemail@esempio.it" data-i18n-placeholder="auth.email.placeholder"/></div>
-      <div class="auth-field"><label data-i18n="auth.password">PASSWORD</label><input type="password" id="auth-password" placeholder="Minimo 6 caratteri" data-i18n-placeholder="auth.password.placeholder"/></div>
-      <button class="auth-submit" id="auth-submit-btn" onclick="submitAuth()" data-i18n="auth.submit.login">Accedi</button>
+      <div class="auth-field"><label data-i18n="auth.email">EMAIL</label><input type="email" id="auth-email" autocomplete="username" placeholder="tuaemail@esempio.it" data-i18n-placeholder="auth.email.placeholder"/></div>
+      <div class="auth-field"><label data-i18n="auth.password">PASSWORD</label><div class="pw-wrap"><input type="password" id="auth-password" autocomplete="current-password" placeholder="minimo 8 caratteri" data-i18n-placeholder="auth.password.placeholder"/><button type="button" class="pw-toggle" aria-pressed="false" aria-label="mostra password" data-i18n-aria-label="auth.password.show" onmousedown="event.preventDefault()" onclick="alternaPassword(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <button type="submit" class="auth-submit" id="auth-submit-btn" data-i18n="auth.submit.login">Accedi</button>
       <div class="auth-info" id="auth-info" data-i18n="auth.info.register">Registrandoti puoi pubblicare annunci e sbloccare contatti.</div>
       <div style="text-align:center">
-        <button onclick="openForgotModal()" data-i18n="auth.forgot" style="background:none;border:none;color:#2a2a6e;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:underline">Password dimenticata?</button>
+        <button type="button" onclick="openForgotModal()" data-i18n="auth.forgot" style="background:none;border:none;color:#2a2a6e;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:underline">Password dimenticata?</button>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -717,13 +726,13 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
       <div class="auth-header-title" data-i18n="auth.forgot.title">Password dimenticata</div>
       <button class="modal-close" style="background:rgba(255,255,255,0.15);color:#fff" onclick="closeForgotModal()">✕</button>
     </div>
-    <div class="auth-body">
+    <form class="auth-body" novalidate onsubmit="event.preventDefault(); submitForgotPassword()">
       <div id="forgot-error" style="display:none" class="auth-error"></div>
       <div id="forgot-success" style="display:none;background:#ddf3ea;color:#2a7a4a" class="auth-error"></div>
-      <div class="auth-field"><label data-i18n="auth.email">EMAIL</label><input type="email" id="forgot-email" placeholder="tuaemail@esempio.it" data-i18n-placeholder="auth.email.placeholder"/></div>
-      <button class="auth-submit" id="forgot-submit-btn" onclick="submitForgotPassword()" data-i18n="auth.forgot.submit">Invia link di reset</button>
+      <div class="auth-field"><label data-i18n="auth.email">EMAIL</label><input type="email" id="forgot-email" autocomplete="email" placeholder="tuaemail@esempio.it" data-i18n-placeholder="auth.email.placeholder"/></div>
+      <button type="submit" class="auth-submit" id="forgot-submit-btn" data-i18n="auth.forgot.submit">Invia link di reset</button>
       <div class="auth-info" data-i18n="auth.forgot.info">Ti invieremo un link per reimpostare la password.</div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -734,11 +743,11 @@ html, body { height: 100%; font-family: 'Inter', sans-serif; font-size: 13px; co
       <div class="auth-header-title" data-i18n="auth.reset.title">Reimposta password</div>
       <button class="modal-close" style="background:rgba(255,255,255,0.15);color:#fff" onclick="closeResetModal()">✕</button>
     </div>
-    <div class="auth-body">
+    <form class="auth-body" novalidate onsubmit="event.preventDefault(); submitResetPassword()">
       <div id="reset-error" style="display:none" class="auth-error"></div>
-      <div class="auth-field"><label data-i18n="auth.reset.newpassword">NUOVA PASSWORD</label><input type="password" id="reset-password" placeholder="Minimo 6 caratteri" data-i18n-placeholder="auth.password.placeholder"/></div>
-      <button class="auth-submit" id="reset-submit-btn" onclick="submitResetPassword()" data-i18n="auth.reset.submit">Reimposta password</button>
-    </div>
+      <div class="auth-field"><label data-i18n="auth.reset.newpassword">NUOVA PASSWORD</label><div class="pw-wrap"><input type="password" id="reset-password" autocomplete="new-password" placeholder="minimo 8 caratteri" data-i18n-placeholder="auth.password.placeholder"/><button type="button" class="pw-toggle" aria-pressed="false" aria-label="mostra password" data-i18n-aria-label="auth.password.show" onmousedown="event.preventDefault()" onclick="alternaPassword(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <button type="submit" class="auth-submit" id="reset-submit-btn" data-i18n="auth.reset.submit">Reimposta password</button>
+    </form>
   </div>
 </div>
 
@@ -1355,6 +1364,7 @@ function openAuthModal() {
   document.getElementById('auth-error').style.display = 'none';
   document.getElementById('auth-email').value = '';
   document.getElementById('auth-password').value = '';
+  document.querySelectorAll('#auth-overlay .pw-toggle').forEach(b => alternaPassword(b, false));
   switchTab('login');
 }
 
@@ -1369,12 +1379,28 @@ function switchTab(mode) {
     mode === 'login' ? 'auth.submit.login' : 'auth.submit.register');
   I18N.set(document.getElementById('auth-info'),
     mode === 'register' ? 'auth.info.register' : 'auth.info.login');
+  document.getElementById('auth-password').autocomplete =
+    mode === 'register' ? 'new-password' : 'current-password';
   document.getElementById('auth-error').style.display = 'none';
+}
+
+// Mostra o nasconde la password del campo accanto al pulsante; senza `mostra`
+// inverte lo stato. Il cursore resta dov'era nel campo.
+function alternaPassword(btn, mostra) {
+  const input = btn.previousElementSibling;
+  if (mostra === undefined) mostra = input.type === 'password';
+  const inizio = input.selectionStart, fine = input.selectionEnd;
+  input.type = mostra ? 'text' : 'password';
+  // Dopo un clic che cambia il type, Chromium riporta il cursore all'inizio:
+  // lo si rimette al frame successivo.
+  if (document.activeElement === input) requestAnimationFrame(() => input.setSelectionRange(inizio, fine));
+  btn.setAttribute('aria-pressed', String(mostra));
+  I18N.setAttr(btn, 'aria-label', mostra ? 'auth.password.hide' : 'auth.password.show');
 }
 
 async function submitAuth() {
   const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
+  const password = document.getElementById('auth-password').value;
   const errEl = document.getElementById('auth-error');
   const btn = document.getElementById('auth-submit-btn');
   errEl.style.display = 'none';
@@ -1448,15 +1474,15 @@ function openResetModal(token) {
   document.getElementById('reset-overlay').classList.add('open');
   document.getElementById('reset-error').style.display = 'none';
   document.getElementById('reset-password').value = '';
+  document.querySelectorAll('#reset-overlay .pw-toggle').forEach(b => alternaPassword(b, false));
 }
 function closeResetModal() { document.getElementById('reset-overlay').classList.remove('open'); }
 
 async function submitResetPassword() {
-  const password = document.getElementById('reset-password').value.trim();
+  const password = document.getElementById('reset-password').value;
   const errEl = document.getElementById('reset-error');
   const btn   = document.getElementById('reset-submit-btn');
   errEl.style.display = 'none';
-  if (!password || password.length < 6) { errEl.textContent = I18N.t('auth.error.short'); errEl.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = I18N.t('common.saving');
   try {
     const r = await fetch(`${API}/auth/reset-password`, {

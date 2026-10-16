@@ -32,7 +32,9 @@ I18N.register('it', {
   'auth.email': 'EMAIL',
   'auth.password': 'PASSWORD',
   'auth.email.placeholder': 'tuaemail@esempio.it',
-  'auth.password.placeholder': 'Minimo 6 caratteri',
+  'auth.password.placeholder': 'minimo 8 caratteri',
+  'auth.password.show': 'mostra password',
+  'auth.password.hide': 'nascondi password',
   'auth.submit.login': 'Accedi',
   'auth.submit.register': 'Registrati',
   'auth.loggingin': 'Accesso…',
@@ -52,7 +54,6 @@ I18N.register('it', {
   'auth.error.generic': 'Errore durante l’accesso',
   'auth.error.missing': 'Inserisci email e password',
   'auth.error.noemail': 'Inserisci la tua email',
-  'auth.error.short': 'Password minimo 6 caratteri',
 
   'verify.ok': 'Email verificata. Benvenuta su IL QUI.',
   'verify.expired': 'Il link di verifica è scaduto. Richiedine uno nuovo dal tuo profilo.',
@@ -66,7 +67,6 @@ I18N.register('it', {
   'security.submit': 'Cambia password',
   'security.done': '✓ Password aggiornata',
   'security.mismatch': 'La nuova password e la conferma non coincidono.',
-  'security.tooshort': 'La nuova password deve avere almeno 6 caratteri.',
 
   'profile.logout': 'Esci dall\'account',
   'profile.mylistings': 'I miei annunci',
