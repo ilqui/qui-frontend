@@ -1769,11 +1769,20 @@ document.getElementById('detail-claim-btn').addEventListener('click', function (
 
 function closeDetailModal() { document.getElementById('detail-overlay').classList.remove('open'); }
 
+// Messaggio d'errore del backend (campo error) se c'è, altrimenti il codice HTTP.
+async function messaggioErrore(r) {
+  try {
+    const d = await r.json();
+    if (d && d.error) return d.error;
+  } catch (_) {}
+  return `HTTP ${r.status}`;
+}
+
 async function fetchContact(listingId, sessionId) {
   try {
     const r = await fetch(`${API}/unlock/contact/${listingId}?session_id=${encodeURIComponent(sessionId||'')}`,
       { headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {} });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw new Error(await messaggioErrore(r));
     renderContact(await r.json());
   } catch(e) {
     document.getElementById('contact-body').innerHTML =
@@ -1979,17 +1988,38 @@ function select(id) {
     .forEach(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
 }
 
+// Offerte con una richiesta di sblocco in corso: un nuovo clic non fa nulla
+// e i loro pulsanti restano disabilitati fino all'errore o al ritorno da Stripe.
+const unlockInCorso = new Set();
+function setUnlockBusy(id, busy) {
+  id = String(id);
+  if (busy) unlockInCorso.add(id); else unlockInCorso.delete(id);
+  document.querySelectorAll('[data-unlock-id]').forEach(b => {
+    if (b.dataset.unlockId === id) b.disabled = busy;
+  });
+}
+// Ritorno con «indietro» dalla pagina di Stripe: la pagina esce dalla cache
+// con i pulsanti ancora disabilitati.
+window.addEventListener('pageshow', e => {
+  if (e.persisted) [...unlockInCorso].forEach(id => setUnlockBusy(id, false));
+});
+
 window.unlock = async function(id) {
   if (!authUser) { requireAuth(() => unlock(id)); return; }
+  if (unlockInCorso.has(String(id))) return;
+  setUnlockBusy(id, true);
   try {
     const r = await fetch(`${API}/unlock/checkout`, {
       method: 'POST', headers: authHeaders(), body: JSON.stringify({ entity_id: id })
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw new Error(await messaggioErrore(r));
     const data = await r.json();
-    if (data.already_unlocked) { openContactModal(id, data.session_id); return; }
+    if (data.already_unlocked) { setUnlockBusy(id, false); openContactModal(id, data.session_id); return; }
     window.location.href = data.url;
-  } catch(e) { alert(I18N.t('unlock.error') + ': ' + e.message); }
+  } catch(e) {
+    setUnlockBusy(id, false);
+    alert(I18N.t('unlock.error') + ': ' + e.message);
+  }
 };
 
 function initFilters(id) {

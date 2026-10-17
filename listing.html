@@ -334,16 +334,41 @@ function render(l) {
   if (authToken) loadReviewSection(l.entity_id);
 }
 
+// Messaggio d'errore del backend (campo error) se c'è, altrimenti il codice HTTP.
+async function messaggioErrore(r) {
+  try {
+    const d = await r.json();
+    if (d && d.error) return d.error;
+  } catch (_) {}
+  return `HTTP ${r.status}`;
+}
+
+// Richiesta di sblocco in corso: un nuovo clic non fa nulla e il pulsante
+// resta disabilitato fino all'errore o al ritorno da Stripe.
+let unlockInCorso = false;
+function setUnlockBusy(busy) {
+  unlockInCorso = busy;
+  const btn = document.getElementById('unlock-btn');
+  if (btn) btn.disabled = busy;
+}
+// Ritorno con «indietro» dalla pagina di Stripe: la pagina esce dalla cache
+// col pulsante ancora disabilitato.
+window.addEventListener('pageshow', e => {
+  if (e.persisted && unlockInCorso) setUnlockBusy(false);
+});
+
 async function unlock(entityId) {
   if (!authToken) {
     window.location.href = `/?product=${PRODUCT_ID}&auth_required=1`;
     return;
   }
+  if (unlockInCorso) return;
+  setUnlockBusy(true);
   try {
     const r = await fetch(`${API}/unlock/checkout`, {
       method: 'POST', headers: authHeaders(), body: JSON.stringify({ entity_id: entityId })
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) throw new Error(await messaggioErrore(r));
     const data = await r.json();
     if (data.already_unlocked) {
       window.location.href = `/?listing=${entityId}&session_id=${data.session_id}`;
@@ -351,6 +376,7 @@ async function unlock(entityId) {
     }
     window.location.href = data.url;
   } catch (e) {
+    setUnlockBusy(false);
     alert(I18N.t('unlock.error') + ': ' + e.message);
   }
 }
